@@ -48,13 +48,22 @@ const calculateHandValue = (hand) => {
   return value;
 };
 
+const canSplit = (hand) => {
+  if (hand.length !== 2) return false;
+  const [card1, card2] = hand;
+  return card1.value === card2.value;
+};
+
 export default function BlackjackGame() {
   const [deck, setDeck] = useState([]);
-  const [playerHand, setPlayerHand] = useState([]);
+  const [playerHands, setPlayerHands] = useState([[]]);  // Array of hands for splitting
+  const [currentHandIndex, setCurrentHandIndex] = useState(0);
   const [dealerHand, setDealerHand] = useState([]);
   const [gameStatus, setGameStatus] = useState('waiting'); // waiting, dealing, playing, dealer-turn, ended
   const [gameResult, setGameResult] = useState('');
   const [newCardIndex, setNewCardIndex] = useState(-1);
+  const [canDouble, setCanDouble] = useState(false);
+  const [canSurrender, setCanSurrender] = useState(false);
 
   const dealCards = async () => {
     const newDeck = shuffleDeck(createDeck());
@@ -63,7 +72,7 @@ export default function BlackjackGame() {
     
     // Deal cards one at a time with animation
     setNewCardIndex(0);
-    setPlayerHand([newDeck[0]]);
+    setPlayerHands([[newDeck[0]]]);
     await new Promise(resolve => setTimeout(resolve, 500));
     setNewCardIndex(-1);
     
@@ -74,7 +83,7 @@ export default function BlackjackGame() {
     
     setNewCardIndex(1);
     const playerInitialHand = [newDeck[0], newDeck[2]];
-    setPlayerHand(playerInitialHand);
+    setPlayerHands([playerInitialHand]);
     await new Promise(resolve => setTimeout(resolve, 500));
     setNewCardIndex(-1);
     
@@ -99,48 +108,129 @@ export default function BlackjackGame() {
       setGameResult('Dealer has Blackjack! Dealer wins!');
     } else {
       setGameStatus('playing');
+      setCanDouble(true);
+      setCanSurrender(true);
     }
   };
 
   const startNewGame = () => {
-    setPlayerHand([]);
+    setPlayerHands([[]]);
+    setCurrentHandIndex(0);
     setDealerHand([]);
     setGameResult('');
     setNewCardIndex(-1);
+    setCanDouble(false);
+    setCanSurrender(false);
     dealCards();
   };
 
   const hit = async () => {
     if (gameStatus !== 'playing') return;
+    setCanDouble(false);
+    setCanSurrender(false);
 
-    const newCard = deck[playerHand.length + dealerHand.length];
+    const totalCards = playerHands.flat().length + dealerHand.length;
+    const newCard = deck[totalCards];
     setGameStatus('dealing');
-    setNewCardIndex(playerHand.length);
-    const newHand = [...playerHand, newCard];
-    setPlayerHand(newHand);
+    setNewCardIndex(playerHands[currentHandIndex].length);
+    
+    const updatedHands = [...playerHands];
+    updatedHands[currentHandIndex] = [...updatedHands[currentHandIndex], newCard];
+    setPlayerHands(updatedHands);
+    
     await new Promise(resolve => setTimeout(resolve, 500));
     setNewCardIndex(-1);
 
-    const newHandValue = calculateHandValue(newHand);
-    if (newHandValue === 21) {
-      setGameStatus('ended');
-      setGameResult('21! You win!');
-    } else if (newHandValue > 21) {
-      setGameStatus('ended');
-      setGameResult('Bust! Dealer wins!');
+    const currentHandValue = calculateHandValue(updatedHands[currentHandIndex]);
+    
+    if (currentHandValue > 21) {
+      if (currentHandIndex < playerHands.length - 1) {
+        setCurrentHandIndex(currentHandIndex + 1);
+        setGameStatus('playing');
+      } else {
+        setGameStatus('ended');
+        setGameResult('Bust! Dealer wins!');
+      }
+    } else if (currentHandValue === 21) {
+      if (currentHandIndex < playerHands.length - 1) {
+        setCurrentHandIndex(currentHandIndex + 1);
+        setGameStatus('playing');
+      } else {
+        await dealerTurn();
+      }
     } else {
       setGameStatus('playing');
     }
   };
 
-  const stand = async () => {
-    if (gameStatus !== 'playing') return;
+  const double = async () => {
+    if (!canDouble || gameStatus !== 'playing') return;
     
+    // Deal exactly one card and then end the hand
+    const totalCards = playerHands.flat().length + dealerHand.length;
+    const newCard = deck[totalCards];
+    setGameStatus('dealing');
+    setNewCardIndex(playerHands[currentHandIndex].length);
+    
+    const updatedHands = [...playerHands];
+    updatedHands[currentHandIndex] = [...updatedHands[currentHandIndex], newCard];
+    setPlayerHands(updatedHands);
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setNewCardIndex(-1);
+
+    const currentHandValue = calculateHandValue(updatedHands[currentHandIndex]);
+    
+    if (currentHandValue > 21) {
+      setGameStatus('ended');
+      setGameResult('Bust! Dealer wins!');
+    } else if (currentHandIndex < playerHands.length - 1) {
+      setCurrentHandIndex(currentHandIndex + 1);
+      setGameStatus('playing');
+    } else {
+      await dealerTurn();
+    }
+  };
+
+  const surrender = () => {
+    if (!canSurrender || gameStatus !== 'playing') return;
+    setGameStatus('ended');
+    setGameResult('Surrendered - lose half bet');
+  };
+
+  const split = async () => {
+    if (!canSplit(playerHands[currentHandIndex]) || gameStatus !== 'playing') return;
+    
+    const handToSplit = playerHands[currentHandIndex];
+    const updatedHands = [...playerHands];
+    
+    // Create two new hands from the split cards
+    updatedHands[currentHandIndex] = [handToSplit[0]];
+    updatedHands.splice(currentHandIndex + 1, 0, [handToSplit[1]]);
+    
+    setPlayerHands(updatedHands);
+    
+    // Deal one new card to the first hand
+    const totalCards = updatedHands.flat().length + dealerHand.length;
+    const newCard = deck[totalCards];
+    
+    setNewCardIndex(1);
+    updatedHands[currentHandIndex].push(newCard);
+    setPlayerHands(updatedHands);
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setNewCardIndex(-1);
+    
+    setGameStatus('playing');
+    setCanDouble(true);
+  };
+
+  const dealerTurn = async () => {
+    setGameStatus('dealer-turn');
     let currentDealerHand = [...dealerHand];
-    let currentIndex = playerHand.length + dealerHand.length;
+    let currentIndex = playerHands.flat().length + dealerHand.length;
     
     while (calculateHandValue(currentDealerHand) < 17) {
-      setGameStatus('dealing');
       setNewCardIndex(currentDealerHand.length);
       currentDealerHand = [...currentDealerHand, deck[currentIndex]];
       setDealerHand(currentDealerHand);
@@ -150,40 +240,64 @@ export default function BlackjackGame() {
     }
 
     setGameStatus('ended');
-
-    const playerValue = calculateHandValue(playerHand);
     const dealerValue = calculateHandValue(currentDealerHand);
-
+    
     if (dealerValue > 21) {
       setGameResult('Dealer busts! You win!');
-    } else if (dealerValue > playerValue) {
-      setGameResult('Dealer wins!');
-    } else if (dealerValue < playerValue) {
-      setGameResult('You win!');
     } else {
-      setGameResult('Push - it\'s a tie!');
+      // Compare dealer's hand with all player hands
+      const results = playerHands.map(hand => {
+        const handValue = calculateHandValue(hand);
+        if (handValue > 21) return 'lose';
+        if (dealerValue > handValue) return 'lose';
+        if (dealerValue < handValue) return 'win';
+        return 'push';
+      });
+      
+      const uniqueResults = [...new Set(results)];
+      if (uniqueResults.length === 1) {
+        setGameResult(
+          uniqueResults[0] === 'win' ? 'You win!' :
+          uniqueResults[0] === 'lose' ? 'Dealer wins!' :
+          'Push - it\'s a tie!'
+        );
+      } else {
+        setGameResult('Split hands: ' + results.map((result, i) => `Hand ${i + 1} - ${result}`).join(', '));
+      }
+    }
+  };
+
+  const stand = async () => {
+    if (gameStatus !== 'playing') return;
+    
+    if (currentHandIndex < playerHands.length - 1) {
+      setCurrentHandIndex(currentHandIndex + 1);
+      setGameStatus('playing');
+      setCanDouble(true);
+    } else {
+      await dealerTurn();
     }
   };
 
   const isCardHidden = (isDealer, cardIndex, gameState) => {
-      return isDealer && cardIndex === 1 && (gameState === 'playing' || gameState === 'dealing');
+    return isDealer && cardIndex === 1 && (gameState === 'playing' || gameState === 'dealing');
   };
 
   const renderCard = (card, isDealer, index, isNewCard = false) => {
-      return (
-          <Card 
-              className={`w-20 h-32 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-500 absolute
-                  ${isNewCard ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'}`}
-              style={{ 
-                  left: `${index * 40}px`, 
-                  zIndex: index
-              }}
-          >
-              <CardContent className={`text-2xl ${isCardHidden(isDealer, index, gameStatus) ? 'bg-blue-800 w-full h-full flex items-center justify-center text-white' : ['♥', '♦'].includes(card.suit) ? 'text-red-500' : 'text-black'}`}>
-                  {isCardHidden(isDealer, index, gameStatus) ? '?' : card.value + card.suit}
-              </CardContent>
-          </Card>
-      );
+    return (
+      <Card 
+        className={`w-20 h-32 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-500 absolute
+          ${isNewCard ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'}`}
+        style={{ 
+          left: `${index * 40}px`, 
+          zIndex: index
+        }}
+      >
+        <CardContent className={`text-2xl ${isCardHidden(isDealer, index, gameStatus) ? 'bg-blue-800 w-full h-full flex items-center justify-center text-white' : ['♥', '♦'].includes(card.suit) ? 'text-red-500' : 'text-black'}`}>
+          {isCardHidden(isDealer, index, gameStatus) ? '?' : card.value + card.suit}
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -201,7 +315,7 @@ export default function BlackjackGame() {
         <>
           <div className="mb-8">
             <h2 className="text-xl mb-2">Dealer's Hand ({calculateHandValue(dealerHand)})</h2>
-            <div className="flex relative h-40 w-96 overflow-hidden">
+            <div className="flex relative h-40 w-96 overflow-hidden mx-auto">
               {dealerHand.map((card, index) => (
                 <div key={index}>
                   {renderCard(card, true, index, index === newCardIndex)}
@@ -210,19 +324,24 @@ export default function BlackjackGame() {
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-xl mb-2">Your Hand ({calculateHandValue(playerHand)})</h2>
-            <div className="flex relative h-40 w-96 overflow-hidden">
-              {playerHand.map((card, index) => (
-                <div key={index}>
-                  {renderCard(card, false, index, index === newCardIndex)}
-                </div>
-              ))}
+          {playerHands.map((hand, handIndex) => (
+            <div key={handIndex}>
+              <h2 className="text-xl mb-2">
+                Hand {handIndex + 1} ({calculateHandValue(hand)})
+                {handIndex === currentHandIndex && gameStatus === 'playing' && " - Current Hand"}
+              </h2>
+              <div className="flex relative h-40 w-96 overflow-hidden">
+                {hand.map((card, index) => (
+                  <div key={index}>
+                    {renderCard(card, false, index, index === newCardIndex)}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ))}
 
           {gameStatus === 'playing' && (
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap justify-center">
               <button
                 onClick={hit}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -235,6 +354,30 @@ export default function BlackjackGame() {
               >
                 Stand
               </button>
+              {canDouble && (
+                <button
+                  onClick={double}
+                  className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+                >
+                  Double
+                </button>
+              )}
+              {canSurrender && (
+                <button
+                  onClick={surrender}
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Surrender
+                </button>
+              )}
+              {canSplit(playerHands[currentHandIndex]) && (
+                <button
+                  onClick={split}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                  Split
+                </button>
+              )}
             </div>
           )}
 
