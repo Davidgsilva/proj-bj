@@ -59,78 +59,78 @@ export const useBlackjack = () => {
   };
 
   const dealerTurn = async () => {
-      setGameStatus('dealer-turn');
-      let currentDealerHand = [...dealerHand];
-      let currentIndex = playerHands.flat().length + dealerHand.length;
-      
-      console.log('Initial dealer hand:', JSON.stringify(currentDealerHand));
-      const initialDealerValue = calculateHandValue(currentDealerHand);
-      console.log('Initial dealer value:', initialDealerValue);
-      
-      while (calculateHandValue(currentDealerHand) < 17) {
-          console.log('Dealer drawing card (under 17)');
-          setNewCardIndex(currentDealerHand.length);
-          currentDealerHand = [...currentDealerHand, deck[currentIndex]];
-          console.log('Drew card:', JSON.stringify(deck[currentIndex]));
-          console.log('New dealer hand:', JSON.stringify(currentDealerHand));
-          const newValue = calculateHandValue(currentDealerHand);
-          console.log('New dealer value:', newValue);
-          setDealerHand(currentDealerHand);
-          await new Promise(resolve => setTimeout(resolve, 500));
-          setNewCardIndex(-1);
-          currentIndex++;
-      }
+    setGameStatus('dealer-turn');
+    let currentDealerHand = [...dealerHand];
+    let currentIndex = playerHands.flat().length + dealerHand.length;
 
-      setGameStatus('ended');
-      const dealerValue = calculateHandValue(currentDealerHand);
-      console.log('Final dealer hand:', JSON.stringify(currentDealerHand));
-      console.log('Final dealer value:', dealerValue);
-      
-      if (dealerValue > 21) {
-          console.log('Dealer busts!');
-          setGameResult('Dealer busts! You win!');
+    console.log('Initial dealer hand:', JSON.stringify(currentDealerHand));
+    const initialDealerValue = calculateHandValue(currentDealerHand);
+    console.log('Initial dealer value:', initialDealerValue);
+
+    // Dealer draws cards until their hand value is at least 17
+    while (calculateHandValue(currentDealerHand) < 17) {
+      console.log('Dealer drawing card (under 17)');
+      setNewCardIndex(currentDealerHand.length);
+      currentDealerHand = [...currentDealerHand, deck[currentIndex]];
+      console.log('Drew card:', JSON.stringify(deck[currentIndex]));
+      console.log('New dealer hand:', JSON.stringify(currentDealerHand));
+      const newValue = calculateHandValue(currentDealerHand);
+      console.log('New dealer value:', newValue);
+      setDealerHand(currentDealerHand);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setNewCardIndex(-1);
+      currentIndex++;
+    }
+
+    setGameStatus('ended');
+    const dealerValue = calculateHandValue(currentDealerHand);
+    console.log('Final dealer hand:', JSON.stringify(currentDealerHand));
+    console.log('Final dealer value:', dealerValue);
+
+    if (dealerValue > 21) {
+      console.log('Dealer busts!');
+      setGameResult('Dealer busts! You win!');
+    } else {
+      console.log('Checking player hands...');
+      const currentPlayerHands = [...playerHands];
+      const results = currentPlayerHands.map((hand, index) => {
+        console.log(`Complete player hand ${index}:`, JSON.stringify(hand));
+        const handValue = calculateHandValue(hand);
+        console.log(`Player hand ${index} complete value:`, handValue);
+        console.log(`Comparing dealer (${dealerValue}) vs player (${handValue})`);
+
+        if (handValue > 21) {
+          console.log('Player busts - lose');
+          return 'lose';
+        }
+        if (dealerValue === handValue) {
+          console.log('Equal values - push');
+          return 'push';
+        }
+        if (dealerValue > handValue) {
+          console.log('Dealer higher - lose');
+          return 'lose';
+        }
+        console.log('Player higher - win');
+        return 'win';
+      });
+
+      console.log('All results:', results);
+      const uniqueResults = [...new Set(results)];
+      console.log('Unique results:', uniqueResults);
+
+      if (uniqueResults.length === 1) {
+        const result = uniqueResults[0] === 'win' ? 'You win!' :
+                      uniqueResults[0] === 'lose' ? 'Dealer wins!' :
+                      'Push - it\'s a tie!';
+        console.log('Final result:', result);
+        setGameResult(result);
       } else {
-          console.log('Checking player hands...');
-          // Get fresh copy of player hands to ensure we have the most up-to-date state
-          const currentPlayerHands = [...playerHands];
-          const results = currentPlayerHands.map((hand, index) => {
-              console.log(`Complete player hand ${index}:`, JSON.stringify(hand));
-              const handValue = calculateHandValue(hand);
-              console.log(`Player hand ${index} complete value:`, handValue);
-              console.log(`Comparing dealer (${dealerValue}) vs player (${handValue})`);
-
-              if (handValue > 21) {
-                  console.log('Player busts - lose');
-                  return 'lose';
-              }
-              if (dealerValue === handValue) {
-                  console.log('Equal values - push');
-                  return 'push';
-              }
-              if (dealerValue > handValue) {
-                  console.log('Dealer higher - lose');
-                  return 'lose';
-              }
-              console.log('Player higher - win');
-              return 'win';
-          });
-          
-          console.log('All results:', results);
-          const uniqueResults = [...new Set(results)];
-          console.log('Unique results:', uniqueResults);
-
-          if (uniqueResults.length === 1) {
-              const result = uniqueResults[0] === 'win' ? 'You win!' :
-                            uniqueResults[0] === 'lose' ? 'Dealer wins!' :
-                            'Push - it\'s a tie!';
-              console.log('Final result:', result);
-              setGameResult(result);
-          } else {
-              const result = 'Split hands: ' + results.map((result, i) => `Hand ${i + 1} - ${result}`).join(', ');
-              console.log('Split hands result:', result);
-              setGameResult(result);
-          }
+        const result = 'Split hands: ' + results.map((result, i) => `Hand ${i + 1} - ${result}`).join(', ');
+        console.log('Split hands result:', result);
+        setGameResult(result);
       }
+    }
   };
 
   const hit = async () => {
@@ -211,6 +211,60 @@ export const useBlackjack = () => {
       await dealerTurn();
     }
   };
+
+  // const double = async () => {
+  //   if (!canDouble || gameStatus !== 'playing') return;
+
+  //   // Hardcode the next card in the deck for testing
+  //   const totalCards = playerHands.flat().length + dealerHand.length;
+  //   const hardcodedCard = { suit: '♥', value: '10' }; // Example: Force a 10 of hearts
+  //   deck[totalCards] = hardcodedCard; // Replace the next card in the deck with the hardcoded card
+
+  //   setGameStatus('dealing');
+  //   setNewCardIndex(playerHands[currentHandIndex].length);
+
+  //   const updatedHands = [...playerHands];
+  //   updatedHands[currentHandIndex] = [...updatedHands[currentHandIndex], hardcodedCard]; // Add the hardcoded card to the player's hand
+  //   setPlayerHands(updatedHands);
+
+  //   await new Promise(resolve => setTimeout(resolve, 500));
+  //   setNewCardIndex(-1);
+
+  //   const currentHandValue = calculateHandValue(updatedHands[currentHandIndex]);
+
+  //   // Hardcode the dealer's hand for testing
+  //   const hardcodedDealerHand = [
+  //     { suit: '♦', value: '6' },
+  //     { suit: '♣', value: '4' },
+  //     { suit: '♥', value: '10' }, // Dealer ends up with 20
+  //   ];
+  //   setDealerHand(hardcodedDealerHand);
+
+  //   // Force the game to evaluate the result
+  //   if (currentHandValue > 21) {
+  //     setGameStatus('ended');
+  //     setGameResult('Bust! Dealer wins!');
+  //   } else if (currentHandIndex < playerHands.length - 1) {
+  //     setCurrentHandIndex(currentHandIndex + 1);
+  //     setGameStatus('playing');
+  //   } else {
+  //     // Simulate the dealer's turn with the hardcoded hand
+  //     const dealerValue = calculateHandValue(hardcodedDealerHand);
+  //     const playerValue = currentHandValue;
+
+  //     if (dealerValue > 21) {
+  //       setGameResult('Dealer busts! You win!');
+  //     } else if (dealerValue === playerValue) {
+  //       setGameResult('Push - it\'s a tie!');
+  //     } else if (dealerValue > playerValue) {
+  //       setGameResult('Dealer wins!');
+  //     } else {
+  //       setGameResult('You win!');
+  //     }
+
+  //     setGameStatus('ended');
+  //   }
+  // };
 
   const surrender = () => {
     if (!canSurrender || gameStatus !== 'playing') return;

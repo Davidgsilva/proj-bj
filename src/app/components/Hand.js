@@ -6,10 +6,16 @@ export const Hand = ({ title, cards, isDealer, gameStatus, newCardIndex, current
     return isDealer && cardIndex === 1 && (gameState === 'playing' || gameState === 'dealing');
   };
 
+  const getVisibleCards = () => {
+    return cards.filter((_, index) => !isCardHidden(isDealer, index, gameStatus));
+  };
+
+  const displayValue = isDealer ? calculateHandValue(getVisibleCards()) : calculateHandValue(cards);
+
   return (
     <div className="mb-8">
       <h2 className="text-xl mb-2">
-        {title} ({calculateHandValue(cards)})
+        {title} ({displayValue})
         {currentHand && gameStatus === 'playing' && " - Current Hand"}
       </h2>
       <div className="flex relative h-40 w-96 overflow-hidden mx-auto">
