@@ -36,9 +36,9 @@ export default function BlackjackGame() {
           onNewGame={actions.startNewGame}
         />
 
-        {gameStatus === 'ended' && (
+        {/*gameStatus === 'ended' && (
           <div className="text-2xl">{gameResult}</div>
-        )}
+        )*/}
       </div>
 
       {/* Game Area */}

@@ -19,11 +19,11 @@ export const Hand = ({ title, cards, isDealer, gameStatus, newCardIndex, current
           {title}
           {currentHand && gameStatus === 'playing' && " - Current Hand"}
         </span>
-        <div className="absolute top-0 left-[96px] bg-[var(--grey-400)] text-white font-extrabold px-4 py-1 rounded-full w-16 text-center transform -translate-y-full shadow-sm transition-all duration-300">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[var(--grey-400)] text-white font-extrabold px-4 py-1 rounded-full w-16 text-center transform -translate-y-full shadow-sm transition-all duration-300">
           {displayValue}
         </div>
       </div>
-      <div className="flex relative h-40 w-96 overflow-hidden mx-auto">
+      <div className="flex relative h-64 w-96 mx-auto">
         {cards.map((card, index) => (
           <div key={index}>
             <PlayingCard
@@ -32,6 +32,7 @@ export const Hand = ({ title, cards, isDealer, gameStatus, newCardIndex, current
               index={index}
               isNewCard={index === newCardIndex}
               isHidden={isCardHidden(isDealer, index, gameStatus)}
+              totalCards={cards.length}
             />
           </div>
         ))}
