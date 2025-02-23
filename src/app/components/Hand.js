@@ -13,11 +13,16 @@ export const Hand = ({ title, cards, isDealer, gameStatus, newCardIndex, current
   const displayValue = isDealer ? calculateHandValue(getVisibleCards()) : calculateHandValue(cards);
 
   return (
-    <div className="mb-8">
-      <h2 className="text-xl mb-2">
-        {title} ({displayValue})
-        {currentHand && gameStatus === 'playing' && " - Current Hand"}
-      </h2>
+    <div className="mb-8 relative">
+      <div className="flex flex-col">
+        <span className="text-xl">
+          {title}
+          {currentHand && gameStatus === 'playing' && " - Current Hand"}
+        </span>
+        <div className="absolute top-0 left-[96px] bg-[var(--grey-400)] text-white font-extrabold px-4 py-1 rounded-full w-16 text-center transform -translate-y-full shadow-sm transition-all duration-300">
+          {displayValue}
+        </div>
+      </div>
       <div className="flex relative h-40 w-96 overflow-hidden mx-auto">
         {cards.map((card, index) => (
           <div key={index}>

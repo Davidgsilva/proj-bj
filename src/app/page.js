@@ -19,49 +19,54 @@ export default function BlackjackGame() {
   } = useBlackjack();
 
   return (
-    <main className="min-h-screen p-8 flex flex-col items-center">
-      <h1 className="text-4xl mb-8">Blackjack</h1>
-      
-      {gameStatus !== 'waiting' && (
-        <>
-          <Hand
-            title="Dealer's Hand"
-            cards={dealerHand}
-            isDealer={true}
-            gameStatus={gameStatus}
-            newCardIndex={newCardIndex}
-          />
+    <main className="min-h-screen p-8 flex bg-stake">
+      {/* Controls Column */}
+      <div className="w-64 flex flex-col gap-4 bg-semi-dark">
+        
+        <GameControls
+          gameStatus={gameStatus}
+          onHit={actions.hit}
+          onStand={actions.stand}
+          onDouble={actions.double}
+          onSurrender={actions.surrender}
+          onSplit={actions.split}
+          canDouble={canDouble}
+          canSurrender={canSurrender}
+          canSplitHand={canSplit(playerHands[currentHandIndex])}
+          onNewGame={actions.startNewGame}
+        />
 
-          {playerHands.map((hand, handIndex) => (
+        {gameStatus === 'ended' && (
+          <div className="text-2xl">{gameResult}</div>
+        )}
+      </div>
+
+      {/* Game Area */}
+      <div className="flex-1 flex flex-col items-center bg-dark justify-center">
+        {gameStatus !== 'waiting' && (
+          <>
             <Hand
-              key={handIndex}
-              title={`Hand ${handIndex + 1}`}
-              cards={hand}
-              isDealer={false}
+              title=""
+              cards={dealerHand}
+              isDealer={true}
               gameStatus={gameStatus}
               newCardIndex={newCardIndex}
-              currentHand={handIndex === currentHandIndex}
             />
-          ))}
-        </>
-      )}
 
-      <GameControls
-        gameStatus={gameStatus}
-        onHit={actions.hit}
-        onStand={actions.stand}
-        onDouble={actions.double}
-        onSurrender={actions.surrender}
-        onSplit={actions.split}
-        canDouble={canDouble}
-        canSurrender={canSurrender}
-        canSplitHand={canSplit(playerHands[currentHandIndex])}
-        onNewGame={actions.startNewGame}
-      />
-
-      {gameStatus === 'ended' && (
-        <div className="text-2xl mb-4">{gameResult}</div>
-      )}
+            {playerHands.map((hand, handIndex) => (
+              <Hand
+                key={handIndex}
+                title=""
+                cards={hand}
+                isDealer={false}
+                gameStatus={gameStatus}
+                newCardIndex={newCardIndex}
+                currentHand=""
+              />
+            ))}
+          </>
+        )}
+      </div>
     </main>
   );
 }
