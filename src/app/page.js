@@ -21,7 +21,7 @@ export default function BlackjackGame() {
   return (
     <main className="min-h-screen p-8 flex bg-stake">
       {/* Controls Column */}
-      <div className="w-64 flex flex-col gap-4 bg-semi-dark">
+      <div className="w-64 flex flex-col gap-4 bg-semi-dark game-sidebar">
         
         <GameControls
           gameStatus={gameStatus}
@@ -51,6 +51,7 @@ export default function BlackjackGame() {
               isDealer={true}
               gameStatus={gameStatus}
               newCardIndex={newCardIndex}
+              gameResult={gameResult}
             />
 
             {playerHands.map((hand, handIndex) => (
@@ -62,6 +63,7 @@ export default function BlackjackGame() {
                 gameStatus={gameStatus}
                 newCardIndex={newCardIndex}
                 currentHand=""
+                gameResult={gameResult}
               />
             ))}
           </>

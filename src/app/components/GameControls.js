@@ -1,4 +1,4 @@
-export const GameControls = ({ 
+export const GameControls = ({
   gameStatus,
   onHit,
   onStand,
@@ -10,70 +10,61 @@ export const GameControls = ({
   canSplitHand,
   onNewGame
 }) => {
-  if (gameStatus === 'waiting') {
-    return (
+  const isPlaying = gameStatus === 'playing';
+  
+  return (
+    <div className="grid grid-cols-2 gap-4 w-full">
+      {/* New Game / Play Again button */}
+
+      {/* Game action buttons */}
+      <button
+        onClick={onHit}
+        disabled={!isPlaying}
+        className={`px-4 py-2 player-action-btn py-[.9375rem] px-[1.25rem] text-white font-extrabold text-xs rounded w-full ${!isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        Hit
+      </button>
+      
+      <button
+        onClick={onStand}
+        disabled={!isPlaying}
+        className={`px-4 py-2 player-action-btn py-[.9375rem] px-[1.25rem] text-white font-extrabold text-xs rounded w-full ${!isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        Stand
+      </button>
+      
+      <button
+        onClick={onDouble}
+        disabled={!isPlaying || !canDouble}
+        className={`px-4 py-2 player-action-btn py-[.9375rem] px-[1.25rem] text-white font-extrabold text-xs rounded w-full ${!isPlaying || !canDouble ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        Double
+      </button>
+      
+      <button
+        onClick={onSurrender}
+        disabled={!isPlaying || !canSurrender}
+        className={`px-4 py-2 py-[.9375rem] px-[1.25rem] player-action-btn text-white font-extrabold text-xs rounded w-full ${!isPlaying || !canSurrender ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        Surrender
+      </button>
+      
+      <button
+        onClick={onSplit}
+        disabled={!isPlaying || !canSplitHand}
+        className={`px-4 py-2 py-[.9375rem] px-[1.25rem] player-action-btn text-white font-extrabold text-xs rounded w-full ${!isPlaying || !canSplitHand ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        Split
+      </button>
+
       <button
         onClick={onNewGame}
-        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+        className={`px-4 py-2 py-[1.123rem] px-[1.75rem] font-extrabold text-sm bg-green-500 hover:bg-green-600 text-black rounded col-span-2 ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
+        disabled={isPlaying}
       >
-        Start New Game
+        Play
       </button>
-    );
-  }
 
-  if (gameStatus === 'ended') {
-    return (
-      <button
-        onClick={onNewGame}
-        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-      >
-        Play Again
-      </button>
-    );
-  }
-
-  if (gameStatus === 'playing') {
-    return (
-      <div className="grid grid-cols-2 gap-4 w-full">
-            <button
-              onClick={onHit}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 w-full"
-            >
-              Hit
-            </button>
-            <button
-              onClick={onStand}
-              className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 w-full"
-            >
-              Stand
-            </button>
-            {canDouble && (
-              <button
-                onClick={onDouble}
-                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 w-full"
-              >
-                Double
-              </button>
-            )}
-            {canSurrender && (
-              <button
-                onClick={onSurrender}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 w-full"
-              >
-                Surrender
-              </button>
-            )}
-            {canSplitHand && (
-              <button
-                onClick={onSplit}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 w-full"
-              >
-                Split
-              </button>
-            )}
-        </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 };
